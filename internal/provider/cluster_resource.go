@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -33,6 +34,7 @@ type ClusterResource struct {
 
 // ClusterResourceModel describes the resource data model.
 type ClusterResourceModel struct {
+	ID        types.String `tfsdk:"id"`
 	Name      types.String `tfsdk:"name"`
 	K3dConfig types.String `tfsdk:"k3d_config"`
 }
@@ -47,6 +49,11 @@ func (r *ClusterResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Dia
 		MarkdownDescription: "Cluster resource",
 
 		Attributes: map[string]tfsdk.Attribute{
+			"id": {
+				MarkdownDescription: "Cluster resource unique identifier.",
+				Type:                types.StringType,
+				Computed:            true,
+			},
 			"name": {
 				MarkdownDescription: "Cluster name.",
 				Type:                types.StringType,
@@ -108,11 +115,26 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 
 	clusterName := fmt.Sprintf("%x", checksum)
 	cmd := exec.Command("k3d", "cluster", "create", clusterName, "--config", configPath)
-	if err := cmd.Run(); err != nil {
-		resp.Diagnostics.AddError("Failed creating k3d cluster", fmt.Sprint(err))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		outputString := string(output)
+		if strings.Contains(outputString, "already exists") {
+			// TODO Handle name already exists.
+		}
+		if strings.Contains(outputString, "Schema Validation failed") {
+			// TODO Handle schema validation failure.
+		}
+		if strings.Contains(outputString, "permission denied") {
+			// TODO Handle running without permission for Docker.
+		}
+		if strings.Contains(outputString, "executable file not found") {
+			// TODO Handle k3d is not installed.
+		}
+		resp.Diagnostics.AddError("Failed creating k3d cluster", outputString)
 		return
 	}
 	data.Name = types.StringValue(clusterName)
+	data.ID = types.StringValue(clusterName)
 
 	// Should I really delete the config file? Or should I just litter the temp dir?
 	if err := os.Remove(configPath); err != nil {
@@ -147,7 +169,7 @@ func (r *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 	// }
 
 	cmd := exec.Command("k3d", "cluster", "list", "--output", "json")
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed listing k3d cluster", fmt.Sprint(err))
 		return

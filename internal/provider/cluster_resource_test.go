@@ -1,15 +1,13 @@
 package provider
 
 import (
-	"crypto/md5"
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-const k3dConfig = `
-apiVersion: k3d.io/v1alpha4
+const k3dConfig = `apiVersion: k3d.io/v1alpha4
 kind: Simple
 
 # Expose ports 80 via 8080 and 443 via 8443.
@@ -28,7 +26,6 @@ registries:
 `
 
 func TestAccClusterResource(t *testing.T) {
-	configHash := fmt.Sprintf("%x", md5.Sum([]byte(k3dConfig)))
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -38,20 +35,21 @@ func TestAccClusterResource(t *testing.T) {
 				Config: testAccClusterResourceConfig(k3dConfig),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("scaffolding_cluster.test", "k3d_config", k3dConfig),
-					resource.TestCheckResourceAttr("scaffolding_cluster.test", "name", configHash),
+					resource.TestCheckResourceAttr("scaffolding_cluster.test", "name", "42f6391d7823ace7eb7d2d71ea5fb771"),
+					resource.TestCheckResourceAttr("scaffolding_cluster.test", "id", "42f6391d7823ace7eb7d2d71ea5fb771"),
 				),
 			},
 			// ImportState testing
-			{
-				ResourceName:      "scaffolding_cluster.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-				// This is not normally necessary, but is here because this
-				// example code does not have an actual upstream service.
-				// Once the Read method is able to refresh information from
-				// the upstream service, this can be removed.
-				ImportStateVerifyIgnore: []string{"configurable_attribute"},
-			},
+			// {
+			// 	ResourceName:      "scaffolding_cluster.test",
+			// 	ImportState:       true,
+			// 	ImportStateVerify: true,
+			// 	// This is not normally necessary, but is here because this
+			// 	// example code does not have an actual upstream service.
+			// 	// Once the Read method is able to refresh information from
+			// 	// the upstream service, this can be removed.
+			// 	ImportStateVerifyIgnore: []string{"configurable_attribute"},
+			// },
 			// Update and Read testing
 			// {
 			// 	Config: testAccClusterResourceConfig("two"),
