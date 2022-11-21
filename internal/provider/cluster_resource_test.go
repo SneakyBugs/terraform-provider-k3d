@@ -39,17 +39,6 @@ func TestAccClusterResource(t *testing.T) {
 					resource.TestCheckResourceAttr("scaffolding_cluster.test", "id", "42f6391d7823ace7eb7d2d71ea5fb771"),
 				),
 			},
-			// ImportState testing
-			// {
-			// 	ResourceName:      "scaffolding_cluster.test",
-			// 	ImportState:       true,
-			// 	ImportStateVerify: true,
-			// 	// This is not normally necessary, but is here because this
-			// 	// example code does not have an actual upstream service.
-			// 	// Once the Read method is able to refresh information from
-			// 	// the upstream service, this can be removed.
-			// 	ImportStateVerifyIgnore: []string{"configurable_attribute"},
-			// },
 			// Update and Read testing
 			// {
 			// 	Config: testAccClusterResourceConfig("two"),
@@ -62,11 +51,11 @@ func TestAccClusterResource(t *testing.T) {
 	})
 }
 
-func testAccClusterResourceConfig(configurableAttribute string) string {
+func testAccClusterResourceConfig(k3dConfig string) string {
 	return fmt.Sprintf(`
 resource "scaffolding_cluster" "test" {
 	name = "k3d-provider-test"
   k3d_config = %[1]q
 }
-`, configurableAttribute)
+`, k3dConfig)
 }
