@@ -56,8 +56,8 @@ func (r *ClusterResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Dia
 			},
 			"name": {
 				MarkdownDescription: "Cluster name.",
+				Required:            true,
 				Type:                types.StringType,
-				Computed:            true,
 			},
 			"k3d_config": {
 				MarkdownDescription: "K3d config content.",
@@ -113,8 +113,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	clusterName := fmt.Sprintf("%x", checksum)
-	cmd := exec.Command("k3d", "cluster", "create", clusterName, "--config", configPath)
+	cmd := exec.Command("k3d", "cluster", "create", data.Name.ValueString(), "--config", configPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		outputString := string(output)
@@ -133,10 +132,9 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 		resp.Diagnostics.AddError("Failed creating k3d cluster", outputString)
 		return
 	}
-	data.Name = types.StringValue(clusterName)
-	data.ID = types.StringValue(clusterName)
+	configChecksum := fmt.Sprintf("%x", checksum)
+	data.ID = types.StringValue(configChecksum)
 
-	// Should I really delete the config file? Or should I just litter the temp dir?
 	if err := os.Remove(configPath); err != nil {
 		// TODO Continue as this is not a critical error?
 		resp.Diagnostics.AddError("Failed removing temporary k3d config", fmt.Sprint(err))

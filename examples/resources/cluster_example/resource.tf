@@ -3,8 +3,8 @@ provider "scaffolding" {
 }
 
 resource "scaffolding_cluster" "example" {
-  configurable_attribute = "some-value"
-  k3d_config             = <<EOF
+  name       = "example-name"
+  k3d_config = <<EOF
 apiVersion: k3d.io/v1alpha4
 kind: Simple
 
