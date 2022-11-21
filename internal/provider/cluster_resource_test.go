@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"os/exec"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -32,6 +33,23 @@ func TestAccClusterResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
+				Config: testAccClusterResourceConfig(k3dConfig),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("scaffolding_cluster.test", "k3d_config", k3dConfig),
+					resource.TestCheckResourceAttr("scaffolding_cluster.test", "name", "k3d-provider-test"),
+					resource.TestCheckResourceAttr("scaffolding_cluster.test", "id", "42f6391d7823ace7eb7d2d71ea5fb771"),
+				),
+			},
+			// Read and recreate if missing testing
+			{
+				PreConfig: func() {
+					// Delete the cluster created in the previous step.
+					cmd := exec.Command("k3d", "cluster", "delete", "k3d-provider-test")
+					err := cmd.Run()
+					if err != nil {
+						t.Error(err)
+					}
+				},
 				Config: testAccClusterResourceConfig(k3dConfig),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("scaffolding_cluster.test", "k3d_config", k3dConfig),

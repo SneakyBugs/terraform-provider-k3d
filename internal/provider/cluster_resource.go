@@ -177,9 +177,7 @@ func (r *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 	cluster, err := findCluster(clusters, data.Name.ValueString())
 	if err != nil {
-		// TODO handle cluster does not exist?
-		// Save updated data into Terraform state
-		resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 	if cluster.ServersRunning < cluster.ServersCount {
