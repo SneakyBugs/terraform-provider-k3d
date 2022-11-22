@@ -219,9 +219,9 @@ func (r *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 	//     resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update example, got error: %s", err))
 	//     return
 	// }
-	resp.Diagnostics.AddWarning(
-		"Update is not yet implemented",
-		"Update has been called, but it's not yet implemented.")
+	resp.Diagnostics.AddError(
+		"Updating clusters is not supported by k3d",
+		"Destroy the resource and apply again to recreate the cluster.")
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

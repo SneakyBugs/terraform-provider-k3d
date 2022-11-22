@@ -57,13 +57,6 @@ func TestAccClusterResource(t *testing.T) {
 					resource.TestCheckResourceAttr("scaffolding_cluster.test", "id", "42f6391d7823ace7eb7d2d71ea5fb771"),
 				),
 			},
-			// Update and Read testing
-			// {
-			// 	Config: testAccClusterResourceConfig("two"),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		resource.TestCheckResourceAttr("scaffolding_cluster.test", "configurable_attribute", "two"),
-			// 	),
-			// },
 			// Delete testing automatically occurs in TestCase
 		},
 	})
