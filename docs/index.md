@@ -13,7 +13,7 @@ description: |-
 ## Example Usage
 
 ```terraform
-provider "scaffolding" {
+provider "k3d" {
   # example configuration here
 }
 ```

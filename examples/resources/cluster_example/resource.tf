@@ -1,4 +1,4 @@
-resource "scaffolding_cluster" "example" {
+resource "k3d_cluster" "example" {
   name       = "example-cluster"
   k3d_config = <<EOF
 apiVersion: k3d.io/v1alpha4

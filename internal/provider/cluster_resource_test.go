@@ -16,12 +16,12 @@ func TestAccClusterResource(t *testing.T) {
 			{
 				Config: testAccClusterResourceConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("scaffolding_cluster.test", "name", "k3d-provider-test"),
-					resource.TestCheckResourceAttrSet("scaffolding_cluster.test", "id"),
-					resource.TestCheckResourceAttrSet("scaffolding_cluster.test", "host"),
-					resource.TestCheckResourceAttrSet("scaffolding_cluster.test", "client_certificate"),
-					resource.TestCheckResourceAttrSet("scaffolding_cluster.test", "client_key"),
-					resource.TestCheckResourceAttrSet("scaffolding_cluster.test", "cluster_ca_certificate"),
+					resource.TestCheckResourceAttr("k3d_cluster.test", "name", "k3d-provider-test"),
+					resource.TestCheckResourceAttrSet("k3d_cluster.test", "id"),
+					resource.TestCheckResourceAttrSet("k3d_cluster.test", "host"),
+					resource.TestCheckResourceAttrSet("k3d_cluster.test", "client_certificate"),
+					resource.TestCheckResourceAttrSet("k3d_cluster.test", "client_key"),
+					resource.TestCheckResourceAttrSet("k3d_cluster.test", "cluster_ca_certificate"),
 				),
 			},
 			// Read and recreate if missing testing
@@ -36,12 +36,12 @@ func TestAccClusterResource(t *testing.T) {
 				},
 				Config: testAccClusterResourceConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("scaffolding_cluster.test", "name", "k3d-provider-test"),
-					resource.TestCheckResourceAttrSet("scaffolding_cluster.test", "id"),
-					resource.TestCheckResourceAttrSet("scaffolding_cluster.test", "host"),
-					resource.TestCheckResourceAttrSet("scaffolding_cluster.test", "client_certificate"),
-					resource.TestCheckResourceAttrSet("scaffolding_cluster.test", "client_key"),
-					resource.TestCheckResourceAttrSet("scaffolding_cluster.test", "cluster_ca_certificate"),
+					resource.TestCheckResourceAttr("k3d_cluster.test", "name", "k3d-provider-test"),
+					resource.TestCheckResourceAttrSet("k3d_cluster.test", "id"),
+					resource.TestCheckResourceAttrSet("k3d_cluster.test", "host"),
+					resource.TestCheckResourceAttrSet("k3d_cluster.test", "client_certificate"),
+					resource.TestCheckResourceAttrSet("k3d_cluster.test", "client_key"),
+					resource.TestCheckResourceAttrSet("k3d_cluster.test", "cluster_ca_certificate"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -63,7 +63,7 @@ func TestAccClusterResourceUsage(t *testing.T) {
 			{
 				Config: testAccClusterResourceUsageConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("scaffolding_cluster.test", "name", "k3d-provider-test"),
+					resource.TestCheckResourceAttr("k3d_cluster.test", "name", "k3d-provider-test"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -73,7 +73,7 @@ func TestAccClusterResourceUsage(t *testing.T) {
 
 func testAccClusterResourceConfig() string {
 	return `
-resource "scaffolding_cluster" "test" {
+resource "k3d_cluster" "test" {
 	name = "k3d-provider-test"
   k3d_config = <<EOF
 apiVersion: k3d.io/v1alpha4
@@ -99,7 +99,7 @@ EOF
 
 func testAccClusterResourceUsageConfig() string {
 	return `
-resource "scaffolding_cluster" "test" {
+resource "k3d_cluster" "test" {
 	name = "k3d-provider-test"
   k3d_config = <<EOF
 apiVersion: k3d.io/v1alpha4
@@ -122,10 +122,10 @@ EOF
 }
 
 provider "kubernetes" {
-	host = resource.scaffolding_cluster.test.host
-	client_certificate = base64decode(resource.scaffolding_cluster.test.client_certificate)
-	client_key = base64decode(resource.scaffolding_cluster.test.client_key)
-	cluster_ca_certificate = base64decode(resource.scaffolding_cluster.test.cluster_ca_certificate)
+	host = resource.k3d_cluster.test.host
+	client_certificate = base64decode(resource.k3d_cluster.test.client_certificate)
+	client_key = base64decode(resource.k3d_cluster.test.client_key)
+	cluster_ca_certificate = base64decode(resource.k3d_cluster.test.cluster_ca_certificate)
 }
 
 resource "kubernetes_config_map" "test" {
