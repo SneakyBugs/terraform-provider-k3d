@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"gopkg.in/yaml.v3"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -32,9 +33,14 @@ type ClusterResource struct {
 
 // ClusterResourceModel describes the resource data model.
 type ClusterResourceModel struct {
-	ID        types.String `tfsdk:"id"`
-	Name      types.String `tfsdk:"name"`
-	K3dConfig types.String `tfsdk:"k3d_config"`
+	ID                   types.String `tfsdk:"id"`
+	Name                 types.String `tfsdk:"name"`
+	K3dConfig            types.String `tfsdk:"k3d_config"`
+	Kubeconfig           types.String `tfsdk:"kubeconfig"`
+	Host                 types.String `tfsdk:"host"`
+	ClientCertificate    types.String `tfsdk:"client_certificate"`
+	ClientKey            types.String `tfsdk:"client_key"`
+	ClusterCACertificate types.String `tfsdk:"cluster_ca_certificate"`
 }
 
 func (r *ClusterResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -61,6 +67,38 @@ func (r *ClusterResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Dia
 				MarkdownDescription: "K3d config content.",
 				Required:            true,
 				Type:                types.StringType,
+			},
+			"kubeconfig": {
+				MarkdownDescription: "Kubeconfig content. Dump in a file for use with kubectl and other tools.",
+				Type:                types.StringType,
+				Computed:            true,
+				Sensitive:           true,
+			},
+			"host": {
+				MarkdownDescription: "Cluster host. Use to authenticate other providers with the cluster.",
+				Type:                types.StringType,
+				Computed:            true,
+			},
+			"client_certificate": {
+				MarkdownDescription: "Client certificate encoded in base 64.\n" +
+					"Use to authenticate other providers with the cluster.",
+				Type:      types.StringType,
+				Computed:  true,
+				Sensitive: true,
+			},
+			"client_key": {
+				MarkdownDescription: "Client key encoded in base 64.\n" +
+					"Use to authenticate other providers with the cluster.",
+				Type:      types.StringType,
+				Computed:  true,
+				Sensitive: true,
+			},
+			"cluster_ca_certificate": {
+				MarkdownDescription: "Cluster CA certificate encoded in base 64.\n" +
+					"Use to authenticate other providers with the cluster.",
+				Type:      types.StringType,
+				Computed:  true,
+				Sensitive: true,
 			},
 		},
 	}, nil
@@ -133,6 +171,31 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	configChecksum := fmt.Sprintf("%x", checksum)
 	data.ID = types.StringValue(configChecksum)
 
+	cmd = exec.Command("k3d", "kubeconfig", "get", data.Name.ValueString())
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		resp.Diagnostics.AddError("Failed getting Kubeconfig from k3d", string(output))
+		return
+	}
+
+	var kubeconfig Kubeconfig
+	if err := yaml.Unmarshal(output, &kubeconfig); err != nil {
+		resp.Diagnostics.AddError("Failed parsing Kubeconfig", fmt.Sprint(err))
+		return
+	}
+
+	if len(kubeconfig.Clusters) != 1 || len(kubeconfig.Users) != 1 {
+		resp.Diagnostics.AddError(
+			"Kubeconfig parsed with more than 1 user or cluster.",
+			"contact the provider's developer")
+		return
+	}
+	data.Host = types.StringValue(kubeconfig.Clusters[0].Cluster.Server)
+	data.ClusterCACertificate = types.StringValue(kubeconfig.Clusters[0].Cluster.CertificateAuthorityData)
+	data.ClientCertificate = types.StringValue(kubeconfig.Users[0].User.ClientCertificateData)
+	data.ClientKey = types.StringValue(kubeconfig.Users[0].User.ClientKeyData)
+	data.Kubeconfig = types.StringValue(string(output))
+
 	if err := os.Remove(configPath); err != nil {
 		// TODO Continue as this is not a critical error?
 		resp.Diagnostics.AddError("Failed removing temporary k3d config", fmt.Sprint(err))
@@ -182,9 +245,35 @@ func (r *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 	if cluster.ServersRunning < cluster.ServersCount {
 		// TODO handle needing to start the cluster?
-		// Save updated data into Terraform state
-		resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 	}
+
+	cmd = exec.Command("k3d", "kubeconfig", "get", data.Name.ValueString())
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		resp.Diagnostics.AddError("Failed getting Kubeconfig from k3d", string(output))
+		return
+	}
+
+	var kubeconfig Kubeconfig
+	if err := yaml.Unmarshal(output, &kubeconfig); err != nil {
+		resp.Diagnostics.AddError("Failed parsing Kubeconfig", fmt.Sprint(err))
+		return
+	}
+
+	if len(kubeconfig.Clusters) != 1 || len(kubeconfig.Users) != 1 {
+		resp.Diagnostics.AddError(
+			"Kubeconfig parsed with more than 1 user or cluster.",
+			"contact the provider's developer")
+		return
+	}
+	data.Host = types.StringValue(kubeconfig.Clusters[0].Cluster.Server)
+	data.ClusterCACertificate = types.StringValue(kubeconfig.Clusters[0].Cluster.CertificateAuthorityData)
+	data.ClientCertificate = types.StringValue(kubeconfig.Users[0].User.ClientCertificateData)
+	data.ClientKey = types.StringValue(kubeconfig.Users[0].User.ClientKeyData)
+	data.Kubeconfig = types.StringValue(string(output))
+
+	// Save updated data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func findCluster(clusters []K3dClusterInfo, name string) (K3dClusterInfo, error) {
@@ -249,4 +338,27 @@ func (r *ClusterResource) Delete(ctx context.Context, req resource.DeleteRequest
 		resp.Diagnostics.AddError("Failed deleting k3d cluster", fmt.Sprint(err))
 		return
 	}
+}
+
+type Kubeconfig struct {
+	Users    []KubeconfigUser    `yaml:"users"`
+	Clusters []KubeconfigCluster `yaml:"clusters"`
+}
+
+type KubeconfigUser struct {
+	User KubeconfigUserData `yaml:"user"`
+}
+
+type KubeconfigUserData struct {
+	ClientCertificateData string `yaml:"client-certificate-data"`
+	ClientKeyData         string `yaml:"client-key-data"`
+}
+
+type KubeconfigCluster struct {
+	Cluster KubeconfigClusterData `yaml:"cluster"`
+}
+
+type KubeconfigClusterData struct {
+	CertificateAuthorityData string `yaml:"certificate-authority-data"`
+	Server                   string `yaml:"server"`
 }
