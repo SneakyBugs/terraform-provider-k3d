@@ -66,15 +66,12 @@ func (p *ScaffoldingProvider) Configure(ctx context.Context, req provider.Config
 
 func (p *ScaffoldingProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewExampleResource,
 		NewClusterResource,
 	}
 }
 
 func (p *ScaffoldingProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{
-		NewExampleDataSource,
-	}
+	return []func() datasource.DataSource{}
 }
 
 func New(version string) func() provider.Provider {

@@ -1,9 +1,5 @@
-provider "scaffolding" {
-  # example configuration here
-}
-
 resource "scaffolding_cluster" "example" {
-  name       = "example-name"
+  name       = "example-cluster"
   k3d_config = <<EOF
 apiVersion: k3d.io/v1alpha4
 kind: Simple
