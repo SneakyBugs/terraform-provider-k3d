@@ -49,6 +49,28 @@ func TestAccClusterResource(t *testing.T) {
 	})
 }
 
+func TestAccClusterResourceUsage(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"kubernetes": {
+				Source: "hashicorp/kubernetes",
+			},
+		},
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccClusterResourceUsageConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("scaffolding_cluster.test", "name", "k3d-provider-test"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
 func testAccClusterResourceConfig() string {
 	return `
 resource "scaffolding_cluster" "test" {
@@ -71,6 +93,49 @@ registries:
     name: dev
     hostPort: "5000"
 EOF
+}
+`
+}
+
+func testAccClusterResourceUsageConfig() string {
+	return `
+resource "scaffolding_cluster" "test" {
+	name = "k3d-provider-test"
+  k3d_config = <<EOF
+apiVersion: k3d.io/v1alpha4
+kind: Simple
+
+# Expose ports 80 via 8080 and 443 via 8443.
+ports:
+  - port: 3080:80
+    nodeFilters:
+      - loadbalancer
+  - port: 3443:443
+    nodeFilters:
+      - loadbalancer
+
+registries:
+  create:
+    name: dev
+    hostPort: "5000"
+EOF
+}
+
+provider "kubernetes" {
+	host = resource.scaffolding_cluster.test.host
+	client_certificate = base64decode(resource.scaffolding_cluster.test.client_certificate)
+	client_key = base64decode(resource.scaffolding_cluster.test.client_key)
+	cluster_ca_certificate = base64decode(resource.scaffolding_cluster.test.cluster_ca_certificate)
+}
+
+resource "kubernetes_config_map" "test" {
+	metadata {
+		name = "test"
+	}
+
+	data = {
+		test = "acceptance"
+	}
 }
 `
 }
