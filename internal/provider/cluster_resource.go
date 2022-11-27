@@ -50,11 +50,17 @@ func (r *ClusterResource) Metadata(ctx context.Context, req resource.MetadataReq
 func (r *ClusterResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "Cluster resource",
+		MarkdownDescription: "The resource `k3d_cluster` manages k3d clusters for development.\n" +
+			"\n" +
+			"This resource can be used in conjunction with the Kubernetes and Helm providers " +
+			"to define an entire Kubernetes development environment as code.\n" +
+			"\n" +
+			"Updating cluster configuration or name is not supported by k3d. " +
+			"When changing the `name` or `k3d_config` attributes destroy the resource and apply again.",
 
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
-				MarkdownDescription: "Cluster resource unique identifier.",
+				MarkdownDescription: "Used internally by the provider.",
 				Type:                types.StringType,
 				Computed:            true,
 			},
@@ -64,38 +70,56 @@ func (r *ClusterResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Dia
 				Type:                types.StringType,
 			},
 			"k3d_config": {
-				MarkdownDescription: "K3d config content.",
-				Required:            true,
-				Type:                types.StringType,
+				MarkdownDescription: "K3d config content. " +
+					"Use to set the amounts of servers, agents, container registries, ports, " +
+					"host aliases and more cluster related options. " +
+					"[See config options in k3d documentation](https://k3d.io/v5.4.6/usage/configfile/#config-options).",
+				Required: true,
+				Type:     types.StringType,
 			},
 			"kubeconfig": {
-				MarkdownDescription: "Kubeconfig content. Dump in a file for use with kubectl and other tools.",
-				Type:                types.StringType,
-				Computed:            true,
-				Sensitive:           true,
+				MarkdownDescription: "Kubeconfig content. " +
+					"Dump in a file and point the `KUBECONFIG` environment variable or `--kubeconfig` " +
+					"flag at it to use kubectl or Helm with the cluster.",
+				Type:      types.StringType,
+				Computed:  true,
+				Sensitive: true,
 			},
 			"host": {
-				MarkdownDescription: "Cluster host. Use to authenticate other providers with the cluster.",
-				Type:                types.StringType,
-				Computed:            true,
+				MarkdownDescription: "Cluster host. " +
+					"Use to authenticate other providers with the cluster. " +
+					"Pass to `host` attribute when " +
+					"[configuring Kubernetes](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/guides/getting-started#provider-setup) " +
+					"or [Helm providers](https://registry.terraform.io/providers/hashicorp/helm/latest/docs#credentials-config).",
+				Type:     types.StringType,
+				Computed: true,
 			},
 			"client_certificate": {
-				MarkdownDescription: "Client certificate encoded in base 64.\n" +
-					"Use to authenticate other providers with the cluster.",
+				MarkdownDescription: "Client certificate encoded in base 64. " +
+					"Use to authenticate other providers with the cluster. " +
+					"Use `base64decode` and pass to `client_certificate` attribute when " +
+					"[configuring Kubernetes](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/guides/getting-started#provider-setup) " +
+					"or [Helm providers](https://registry.terraform.io/providers/hashicorp/helm/latest/docs#credentials-config).",
 				Type:      types.StringType,
 				Computed:  true,
 				Sensitive: true,
 			},
 			"client_key": {
-				MarkdownDescription: "Client key encoded in base 64.\n" +
-					"Use to authenticate other providers with the cluster.",
+				MarkdownDescription: "Client key encoded in base 64. " +
+					"Use to authenticate other providers with the cluster. " +
+					"Use `base64decode` and pass to `client_key` attribute when " +
+					"[configuring Kubernetes](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/guides/getting-started#provider-setup) " +
+					"or [Helm providers](https://registry.terraform.io/providers/hashicorp/helm/latest/docs#credentials-config).",
 				Type:      types.StringType,
 				Computed:  true,
 				Sensitive: true,
 			},
 			"cluster_ca_certificate": {
-				MarkdownDescription: "Cluster CA certificate encoded in base 64.\n" +
-					"Use to authenticate other providers with the cluster.",
+				MarkdownDescription: "Cluster CA certificate encoded in base 64. " +
+					"Use to authenticate other providers with the cluster. " +
+					"Use `base64decode` and pass to `cluster_ca_certificate` attribute when " +
+					"[configuring Kubernetes](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/guides/getting-started#provider-setup) " +
+					"or [Helm providers](https://registry.terraform.io/providers/hashicorp/helm/latest/docs#credentials-config).",
 				Type:      types.StringType,
 				Computed:  true,
 				Sensitive: true,

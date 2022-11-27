@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // Ensure K3dProvider satisfies various provider interfaces.
@@ -25,9 +24,7 @@ type K3dProvider struct {
 }
 
 // K3dProviderModel describes the provider data model.
-type K3dProviderModel struct {
-	Endpoint types.String `tfsdk:"endpoint"`
-}
+type K3dProviderModel struct{}
 
 func (p *K3dProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "k3d"
@@ -36,13 +33,10 @@ func (p *K3dProvider) Metadata(ctx context.Context, req provider.MetadataRequest
 
 func (p *K3dProvider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
-		Attributes: map[string]tfsdk.Attribute{
-			"endpoint": {
-				MarkdownDescription: "Example provider attribute",
-				Optional:            true,
-				Type:                types.StringType,
-			},
-		},
+		MarkdownDescription: "This provider manages development Kubernetes clusters in Docker with k3d. " +
+			"Managing k3d clusters in Terraform allows you to provision development clusters " +
+			"and deploy additional software (such as a database for your app) in a single action.",
+		Attributes: map[string]tfsdk.Attribute{},
 	}, nil
 }
 
