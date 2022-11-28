@@ -35,7 +35,18 @@ func (p *K3dProvider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 	return tfsdk.Schema{
 		MarkdownDescription: "This provider manages development Kubernetes clusters in Docker with k3d. " +
 			"Managing k3d clusters in Terraform allows you to provision development clusters " +
-			"and deploy additional software (such as a database for your app) in a single action.",
+			"and deploy additional software (such as a database for your app) in a single action.\n" +
+			"\n" +
+			"The idea behind this provider is to automate everything before `tilt up` with Terraform.\n" +
+			"\n" +
+			"## Quick Start\n" +
+			"\n" +
+			"Make sure to install k3d, [see the installation guide](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli#install-terraform).\n" +
+			"\n" +
+			"You may need to run Terraform with `sudo` because k3d uses Docker.\n" +
+			"\n" +
+			"The example below creates a cluster and deploys a Postgres instance on it. " +
+			"It can be adapted to deploy any services your app needs for development with minimal effort.",
 		Attributes: map[string]tfsdk.Attribute{},
 	}, nil
 }

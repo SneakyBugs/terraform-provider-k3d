@@ -1,51 +1,98 @@
-# Terraform Provider Scaffolding (Terraform Plugin Framework)
+# k3d Terraform Provider
 
-_This template repository is built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework). The template repository built on the [Terraform Plugin SDK](https://github.com/hashicorp/terraform-plugin-sdk) can be found at [terraform-provider-scaffolding](https://github.com/hashicorp/terraform-provider-scaffolding). See [Which SDK Should I Use?](https://www.terraform.io/docs/plugin/which-sdk.html) in the Terraform documentation for additional information._
+> Manage development environments with Terraform
 
-This repository is a *template* for a [Terraform](https://www.terraform.io) provider. It is intended as a starting point for creating Terraform providers, containing:
+This provider manages development Kubernetes clusters in Docker with k3d.
+Managing k3d clusters in Terraform allows you to provision development clusters
+and deploy additional software (such as a database for your app) in a single action.
 
-- A resource and a data source (`internal/provider/`),
-- Examples (`examples/`) and generated documentation (`docs/`),
-- Miscellaneous meta files.
+The idea is to automate everything needed before `tilt up` in a Kubernetes
+development environment.
 
-These files contain boilerplate code that you will need to edit to create your own Terraform provider. Tutorials for creating Terraform providers can be found on the [HashiCorp Learn](https://learn.hashicorp.com/collections/terraform/providers-plugin-framework) platform. _Terraform Plugin Framework specific guides are titled accordingly._
+## Usage Example
 
-Please see the [GitHub template repository documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template) for how to create a new repository from this template on GitHub.
+This example creates a k3d cluster and deploys a Postgres instance.
+It can be adapted to deploy any service your application requires for development.
 
-Once you've written your provider, you'll want to [publish it on the Terraform Registry](https://www.terraform.io/docs/registry/providers/publishing.html) so that others can use it.
+Usage requires:
+- [Terraform](https://www.terraform.io/downloads.html) >= 1.0 ([installation guide](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli#install-terraform))
+- [k3d](https://k3d.io/v5.4.6/) >= 5.4 ([installation guide](https://k3d.io/v5.4.6/#installation))
+
+Create a `main.tf` file with the following content:
+
+```hcl
+resource "k3d_cluster" "example_cluster" {
+  name = "example"
+  # See https://k3d.io/v5.4.6/usage/configfile/#config-options
+  k3d_config = <<EOF
+apiVersion: k3d.io/v1alpha4
+kind: Simple
+
+# Expose ports 80 via 8080 and 443 via 8443.
+ports:
+  - port: 3080:80
+    nodeFilters:
+      - loadbalancer
+  - port: 3443:443
+    nodeFilters:
+      - loadbalancer
+
+registries:
+  create:
+    name: dev
+    hostPort: "5000"
+EOF
+}
+
+provider "kubernetes" {
+  host                   = resource.k3d_cluster.example_cluster.host
+  client_certificate     = base64decode(resource.k3d_cluster.example_cluster.client_certificate)
+  client_key             = base64decode(resource.k3d_cluster.example_cluster.client_key)
+  cluster_ca_certificate = base64decode(resource.k3d_cluster.example_cluster.cluster_ca_certificate)
+}
+
+resource "kubernetes_secret" "postgres_credentials" {
+  metadata {
+    name = "postgres-credentials"
+  }
+
+  data = {
+    "postgres-password"    = "development"
+    "password"             = "development"
+    "replication-password" = "development"
+  }
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = resource.k3d_cluster.example_cluster.host
+    client_certificate     = base64decode(resource.k3d_cluster.example_cluster.client_certificate)
+    client_key             = base64decode(resource.k3d_cluster.example_cluster.client_key)
+    cluster_ca_certificate = base64decode(resource.k3d_cluster.example_cluster.cluster_ca_certificate)
+  }
+}
+
+resource "helm_release" "database" {
+  name       = "postgres"
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "postgresql"
+  set {
+    name  = "auth.existingSecret"
+    value = "postgres-credentials"
+  }
+}
+```
+
+Run `terraform init` and `terraform apply`, you should have a k3d cluster with a Postgres instance.
+Run `terraform destroy` to tear everything down when you are done.
+
+*Note:* You may need to run Terraform with `sudo` because k3d uses Docker.
 
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
 - [Go](https://golang.org/doc/install) >= 1.18
-
-## Building The Provider
-
-1. Clone the repository
-1. Enter the repository directory
-1. Build the provider using the Go `install` command:
-
-```shell
-go install
-```
-
-## Adding Dependencies
-
-This provider uses [Go modules](https://github.com/golang/go/wiki/Modules).
-Please see the Go documentation for the most up to date information about using Go modules.
-
-To add a new dependency `github.com/author/dependency` to your Terraform provider:
-
-```shell
-go get github.com/author/dependency
-go mod tidy
-```
-
-Then commit the changes to `go.mod` and `go.sum`.
-
-## Using the provider
-
-Fill this in for each provider
+- [k3d](https://k3d.io/v5.4.6/) >= 5.4
 
 ## Developing the Provider
 
@@ -55,10 +102,10 @@ To compile the provider, run `go install`. This will build the provider and put 
 
 To generate or update documentation, run `go generate`.
 
-In order to run the full suite of Acceptance tests, run `make testacc`.
+In order to run the full suite of Acceptance tests, run:
 
-*Note:* Acceptance tests create real resources, and often cost money to run.
-
-```shell
-make testacc
 ```
+TF_ACC=1 sudo -E /usr/local/go/bin/go test ./... -v -timeout 120m
+```
+
+*Note:* `sudo` is required because of Docker. Running tests only creates local resources.
