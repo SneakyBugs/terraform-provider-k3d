@@ -68,6 +68,7 @@ jobs:
         with:
           terraform_version: ${{ matrix.terraform }}
           terraform_wrapper: false
+      - run: curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
       - run: go mod download
       - env:
           TF_ACC: "1"
