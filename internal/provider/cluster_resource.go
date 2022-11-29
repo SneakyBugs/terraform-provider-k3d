@@ -174,8 +174,15 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	cmd := exec.Command("k3d", "cluster", "create", data.Name.ValueString(), "--config", configPath)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
+	output, createErr := cmd.CombinedOutput()
+
+	// Remove the config file even when create command failed.
+	if err := os.Remove(configPath); err != nil {
+		// Continue because it is not a critical problem.
+		resp.Diagnostics.AddWarning("Failed removing temporary k3d config", fmt.Sprint(err))
+	}
+
+	if createErr != nil {
 		outputString := string(output)
 		if strings.Contains(outputString, "already exists") {
 			// TODO Handle name already exists.
@@ -196,7 +203,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	data.ID = types.StringValue(configChecksum)
 
 	cmd = exec.Command("k3d", "kubeconfig", "get", data.Name.ValueString())
-	output, err = cmd.CombinedOutput()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed getting Kubeconfig from k3d", string(output))
 		return
@@ -219,11 +226,6 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	data.ClientCertificate = types.StringValue(kubeconfig.Users[0].User.ClientCertificateData)
 	data.ClientKey = types.StringValue(kubeconfig.Users[0].User.ClientKeyData)
 	data.Kubeconfig = types.StringValue(string(output))
-
-	if err := os.Remove(configPath); err != nil {
-		// TODO Continue as this is not a critical error?
-		resp.Diagnostics.AddError("Failed removing temporary k3d config", fmt.Sprint(err))
-	}
 
 	// Write logs using the tflog package
 	// Documentation: https://terraform.io/plugin/log
