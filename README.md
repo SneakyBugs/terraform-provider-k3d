@@ -21,6 +21,15 @@ Usage requires:
 Create a `main.tf` file with the following content:
 
 ```hcl
+terraform {
+  required_providers {
+    k3d = {
+      source  = "sneakybugs/k3d"
+      version = "1.0.0"
+    }
+  }
+}
+
 resource "k3d_cluster" "example_cluster" {
   name = "example"
   # See https://k3d.io/v5.4.6/usage/configfile/#config-options

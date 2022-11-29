@@ -28,6 +28,15 @@ The example below creates a cluster and deploys a Postgres instance on it. It ca
 ## Example Usage
 
 ```terraform
+terraform {
+  required_providers {
+    k3d = {
+      source  = "sneakybugs/k3d"
+      version = "1.0.0"
+    }
+  }
+}
+
 resource "k3d_cluster" "example_cluster" {
   name = "example"
   # See https://k3d.io/v5.4.6/usage/configfile/#config-options
