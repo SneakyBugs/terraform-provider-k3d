@@ -6,7 +6,7 @@ description: |-
   This provider manages development Kubernetes clusters in Docker with k3d. Managing k3d clusters in Terraform allows you to provision development clusters and deploy additional software (such as a database for your app) in a single action.
   The idea behind this provider is to automate everything before tilt up with Terraform.
   Quick Start
-  Make sure to install k3d, see the installation guide https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli#install-terraform.
+  Make sure to install k3d, see the installation guide https://k3d.io/v5.4.6/#installation.
   You may need to run Terraform with sudo because k3d uses Docker.
   The example below creates a cluster and deploys a Postgres instance on it. It can be adapted to deploy any services your app needs for development with minimal effort.
 ---
@@ -19,7 +19,7 @@ The idea behind this provider is to automate everything before `tilt up` with Te
 
 ## Quick Start
 
-Make sure to install k3d, [see the installation guide](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli#install-terraform).
+Make sure to install k3d, [see the installation guide](https://k3d.io/v5.4.6/#installation).
 
 You may need to run Terraform with `sudo` because k3d uses Docker.
 

@@ -41,7 +41,7 @@ func (p *K3dProvider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 			"\n" +
 			"## Quick Start\n" +
 			"\n" +
-			"Make sure to install k3d, [see the installation guide](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli#install-terraform).\n" +
+			"Make sure to install k3d, [see the installation guide](https://k3d.io/v5.4.6/#installation).\n" +
 			"\n" +
 			"You may need to run Terraform with `sudo` because k3d uses Docker.\n" +
 			"\n" +
