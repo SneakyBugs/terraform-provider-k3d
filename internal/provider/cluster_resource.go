@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -166,8 +167,9 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 	//     return
 	// }
 
-	checksum := md5.Sum([]byte(data.K3dConfig.String()))
-	configPath := fmt.Sprintf(filepath.Join(os.TempDir(), "k3d-config-%x.yaml"), checksum)
+	configPath := fmt.Sprintf(
+		filepath.Join(os.TempDir(), "terraform-provider-k3d-%s.yaml"),
+		uuid.NewString())
 	if err := os.WriteFile(configPath, []byte(data.K3dConfig.ValueString()), 0600); err != nil {
 		resp.Diagnostics.AddError("Failed writing temporary k3d config", fmt.Sprint(err))
 		return
@@ -199,6 +201,7 @@ func (r *ClusterResource) Create(ctx context.Context, req resource.CreateRequest
 		resp.Diagnostics.AddError("Failed creating k3d cluster", outputString)
 		return
 	}
+	checksum := md5.Sum([]byte(data.K3dConfig.String()))
 	configChecksum := fmt.Sprintf("%x", checksum)
 	data.ID = types.StringValue(configChecksum)
 
